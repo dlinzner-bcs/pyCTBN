@@ -1,31 +1,36 @@
 import numpy as np
 import itertools
 from typing import List, NewType
+from numpy.core.fromnumeric import shape
 
-from numpy.matrixlib import matrix
 
 State = NewType('State', int)
 States = NewType('States', List[State])
+Transition = NewType('Transition', tuple[States, float])
 
 
 class IM:
     def __init__(self, matrix: np.numarray) -> 'IM':
         d = 0
-        for row in matrix.T:
+        for col in matrix.T:
+            if np.sum(
+                    np.delete(col, d)) == -col[d]:
+                print(
+                    "Warning! Matrix not a proper Intensity Matrix. Will attempt normalization!")
+            col[d] = -np.sum(np.delete(col, d))
             assert np.sum(
-                row[:-d]) == -row[d], "Warning! Matrix not a proper IM. Will attempt normalization!"
-            row[d] = np.sum(row[:-d])
+                np.delete(col, d)) == -col[d], "Logic Error! Matrix not a proper Intensity Matrix!"
             d += 1
 
         self._im = matrix
 
-    @classmethod
+    @ classmethod
     def empty_from_dim(self, dim: int) -> 'IM':
         return IM(matrix=np.zeros((dim, dim)))
 
-    @classmethod
+    @ classmethod
     def random_from_dim(self, dim: int, alpha: float, beta: float) -> 'IM':
-        return IM(matrix=np.zeros((dim, dim)))
+        return IM(matrix=np.random.gamma(shape=alpha, scale=1/beta, size=(dim, dim)))
 
 
 class Node:
@@ -35,7 +40,7 @@ class Node:
         self._children = children
         self._cims = None
 
-    @property
+    @ property
     def cims(self):
         return self._cims
 
@@ -49,13 +54,13 @@ class Node:
                 cims[state_map] = cim
         self._cims = cims
 
-     def generate_random_cims(self,alpha:float,beta:float):
+    def generate_random_cims(self, alpha: float, beta: float):
         cims = dict()
         for states in itertools.product([p._states for p in self._parents]):
             for state in states:
                 dim = int(len(self._states))
                 state_map = tuple(state)
-                cim = IM.random_from_dim(dim,alpha,beta)
+                cim = IM.random_from_dim(dim, alpha, beta)
                 cims[state_map] = cim
         self._cims = cims
 
@@ -70,5 +75,9 @@ class Graph:
 
 
 class CTBN(Graph):
-    def __init__(self, nodes, state_spaces, edges):
-        super().__init__(nodes, state_spaces, edges)
+    def __init__(self, nodes: List[Node], alpha: float, beta: float):
+        super().__init__(nodes)
+        [n.generate_random_cims(alpha, beta) for n in self._nodes]
+
+    def sample_transition(self, s0: States) -> Transition:
+        pass
