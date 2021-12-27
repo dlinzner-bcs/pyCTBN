@@ -25,7 +25,7 @@ class Transition:
 class IM:
     def __init__(self, matrix: np.numarray) -> 'IM':
         d = 0
-        for col in matrix.T:
+        for col in matrix:
             if np.sum(
                     np.delete(col, d)) == -col[d]:
                 logging.warning(
@@ -148,9 +148,6 @@ class CTBNNode(Node):
                 np.sum(self.transition_rates)
             self._state = State(np.argmax(np.random.uniform() <= cum_prob))
 
-    def exit_time(self):
-        return np.random.exponential(self.exit_rate)
-
 
 class Graph:
     def __init__(self, nodes: List[Node]):
@@ -186,9 +183,13 @@ class CTBN(Graph):
         cum_prob = np.cumsum(rates) / np.sum(rates)
         return self._nodes[np.argmax(np.random.uniform() <= cum_prob)]
 
+    def exit_time(self):
+        rates = [0 if n.exit_rate is None else n.exit_rate for n in self._nodes]
+        return np.random.exponential(1/np.sum(rates))
+
     def transition(self) -> Transition:
         node = self.active_node()
-        tau = node.exit_time()
+        tau = self.exit_time()
         s_0 = self.state
         node.next_state()
         s_1 = self.state
@@ -259,5 +260,13 @@ class CTBNLearner(Graph):
         s1 = transition._s_final[node.nid]
         t_stat = node._transition_stats[p_state]
         t_stat[s0, s1] += 1
-        e_stat = node._exit_time_stats[p_state]
-        e_stat[s0] += transition._exit_time
+        for n in self.nodes:
+            if n != node:
+                s0 = transition._s_init[n.nid]
+                if n._parents is None:
+                    p_state = None
+                else:
+                    p_state = tuple([transition._s_init[n_p.nid]
+                                    for n_p in n._parents])
+                e_stat = n._exit_time_stats[p_state]
+                e_stat[s0] += transition._exit_time
