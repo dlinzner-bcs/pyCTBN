@@ -12,13 +12,14 @@ States = NewType('States', tuple[State])
 
 
 class Transition:
-    def __init__(self, s0: States, s1: States, tau: float) -> None:
+    def __init__(self, node_id: int,  s0: States, s1: States, tau: float) -> None:
+        self._node_id = node_id
         self._s_init = s0
         self._s_final = s1
         self._exit_time = tau
 
     def __repr__(self):
-        return "Transition with Initial State:" + repr(self._s_init) + ";End State:" + repr(self._s_final) + ";Exit Time:" + repr(self._exit_time)
+        return "Transition of Node " + repr(self._node_id) + " with Initial State:" + repr(self._s_init) + ";End State:" + repr(self._s_final) + ";Exit Time:" + repr(self._exit_time)
 
 
 class IM:
@@ -47,22 +48,35 @@ class IM:
     def __repr__(self) -> str:
         return np.array2string(self._im)
 
+    def set(self, x, y, val) -> None:
+        self._im[x, y] = val
+        self._im[x, x] = -np.sum(np.delete(self._im[x, :], x))
+
 
 class Node:
-    def __init__(self, state: State, states: States, parents: List['Node'], children: List['Node']) -> 'Node':
+    def __init__(self, states: States, parents: List['Node']) -> 'Node':
         self._states = states
         self._parents = parents
-        self._children = children
-        self._state = state
+        self._nid: Optional[int]
+        self._nid = None
 
     @property
-    def state(self):
-        return self._state
+    def nid(self):
+        return self._nid
+
+    @nid.setter
+    def nid(self, node_id):
+        self._nid = node_id
+
+    @nid.deleter
+    def nid(self):
+        self._nid = None
 
 
 class CTBNNode(Node):
-    def __init__(self, state: State, states: States, parents: List['Node'], children: List['Node']) -> 'Node':
-        super().__init__(state, states, parents, children)
+    def __init__(self, state: State, states: States, parents: List['Node']) -> 'Node':
+        super().__init__(states, parents)
+        self._state = state
         self._cims = None
         self._cim: Optional[IM]
         self._cim = None
@@ -82,12 +96,10 @@ class CTBNNode(Node):
             cim = IM.empty_from_dim(dim)
             cims[None] = cim
         else:
-            for states in itertools.product([p._states for p in self._parents]):
-                for state in states:
-                    dim = int(len(self._states))
-                    state_map = tuple(state)
-                    cim = IM.empty_from_dim(dim)
-                    cims[state_map] = cim
+            for states in itertools.product(*[p._states for p in self._parents]):
+                dim = len(self._states)
+                cim = IM.empty_from_dim(dim)
+                cims[tuple(states)] = cim
         self._cims = cims
 
     def generate_random_cims(self, alpha: float, beta: float):
@@ -143,10 +155,15 @@ class CTBNNode(Node):
 class Graph:
     def __init__(self, nodes: List[Node]):
         self._nodes = nodes
+        for n, n_id in zip(nodes, range(0, len(nodes))):
+            n.nid = n_id
 
     @property
     def nodes(self):
         return self._nodes
+
+    def node_by_id(self, nid) -> 'Node':
+        return [n for n in self._nodes if n._nid == nid][0]
 
 
 class CTBN(Graph):
@@ -156,7 +173,7 @@ class CTBN(Graph):
     @ classmethod
     def with_random_cims(self, nodes: List[CTBNNode], alpha, beta):
         [n.generate_random_cims(alpha, beta) for n in nodes]
-        logging.info("Initialiting Random Conditional Intensity Matrices: \n ")
+        logging.info("Initialiting Random Conditional Intensity Matrices:")
         [logging.debug(pprint.pformat(n.cims)) for n in nodes]
         return CTBN(nodes)
 
@@ -175,7 +192,7 @@ class CTBN(Graph):
         s_0 = self.state
         node.next_state()
         s_1 = self.state
-        return Transition(s_0, s_1, tau)
+        return Transition(node.nid, s_0, s_1, tau)
 
 
 class Trajectory:
@@ -190,3 +207,57 @@ class Trajectory:
         representation = pprint.pformat(
             self._transitions)
         return representation
+
+    def __iter__(self):
+        pass
+
+
+class CTBNLearnerNode(CTBNNode):
+    def __init__(self, state: State, states: States, parents: List['Node'], alpha: float, beta: float) -> 'Node':
+        super().__init__(state, states, parents)
+        transition_stats = dict()
+        exit_time_stats = dict()
+        if self._parents is None:
+            dim = len(self._states)
+            transition_stats[None] = np.zeros((dim, dim))
+            exit_time_stats[None] = np.zeros((dim,))
+        else:
+            for states in itertools.product(*[p._states for p in self._parents]):
+                dim = len(self._states)
+                transition_stats[tuple(states)] = np.ones((dim, dim))*alpha
+                exit_time_stats[tuple(states)] = np.ones((dim,))*beta
+
+        self._transition_stats = transition_stats
+        self._exit_time_stats = exit_time_stats
+        self._cims = None
+
+    def estimate_cims(self):
+        cims = dict()
+        for key in self._transition_stats.keys():
+            t_stat = self._transition_stats[key]
+            e_stat = self._exit_time_stats[key]
+            cim = IM.empty_from_dim(len(self._states))
+            for s in self._states:
+                for s_ in self._states:
+                    cim.set(s, s_, t_stat[s, s_]/e_stat[s])
+            cims[key] = cim
+        self._cims = cims
+
+
+class CTBNLearner(Graph):
+    def __init__(self, nodes: List[CTBNLearnerNode]):
+        super().__init__(nodes)
+
+    def update_stats(self, transition: Transition):
+        node = self.node_by_id(transition._node_id)
+        if node._parents is None:
+            p_state = None
+        else:
+            p_state = tuple([transition._s_init[n.nid]
+                             for n in node._parents])
+        s0 = transition._s_init[node.nid]
+        s1 = transition._s_final[node.nid]
+        t_stat = node._transition_stats[p_state]
+        t_stat[s0, s1] += 1
+        e_stat = node._exit_time_stats[p_state]
+        e_stat[s0] += transition._exit_time
