@@ -2,17 +2,23 @@ import numpy as np
 import itertools
 from typing import List, NewType, Optional
 from numpy.core.fromnumeric import shape
-
+from copy import copy
+import pprint
+import logging
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
 State = NewType('State', int)
-States = NewType('States', List[State])
+States = NewType('States', tuple[State])
 
 
 class Transition:
-    def __init__(self, s0: State, s1: State, tau: float) -> None:
+    def __init__(self, s0: States, s1: States, tau: float) -> None:
         self._s_init = s0
         self._s_final = s1
         self._exit_time = tau
+
+    def __repr__(self):
+        return "Transition with Initial State:" + repr(self._s_init) + ";End State:" + repr(self._s_final) + ";Exit Time:" + repr(self._exit_time)
 
 
 class IM:
@@ -21,8 +27,8 @@ class IM:
         for col in matrix.T:
             if np.sum(
                     np.delete(col, d)) == -col[d]:
-                print(
-                    "Warning! Matrix not a proper Intensity Matrix. Will attempt normalization!")
+                logging.warning(
+                    "Matrix not a proper Intensity Matrix. Will attempt normalization!")
             col[d] = -np.sum(np.delete(col, d))
             assert np.sum(
                 np.delete(col, d)) == -col[d], "Logic Error! Matrix not a proper Intensity Matrix!"
@@ -47,8 +53,17 @@ class Node:
         self._states = states
         self._parents = parents
         self._children = children
-        self._cims = None
         self._state = state
+
+    @property
+    def state(self):
+        return self._state
+
+
+class CTBNNode(Node):
+    def __init__(self, state: State, states: States, parents: List['Node'], children: List['Node']) -> 'Node':
+        super().__init__(state, states, parents, children)
+        self._cims = None
         self._cim: Optional[IM]
         self._cim = None
 
@@ -78,16 +93,14 @@ class Node:
     def generate_random_cims(self, alpha: float, beta: float):
         cims = dict()
         if self._parents is None:
-            dim = int(len(self._states))
+            dim = len(self._states)
             cim = IM.random_from_dim(dim, alpha, beta)
             cims[None] = cim
         else:
-            for states in itertools.product([p._states for p in self._parents]):
-                for state in states:
-                    dim = int(len(self._states))
-                    state_map = tuple(state)
-                    cim = IM.random_from_dim(dim, alpha, beta)
-                    cims[state_map] = cim
+            for states in itertools.product(*[p._states for p in self._parents]):
+                dim = len(self._states)
+                cim = IM.random_from_dim(dim, alpha, beta)
+                cims[tuple(states)] = cim
         self._cims = cims
 
     @property
@@ -95,7 +108,7 @@ class Node:
         if self._parents is None:
             return self._cims[None]
         else:
-            parent_state = tuple([p._states for p in self._parents][0])
+            parent_state = tuple([p.state for p in self._parents])
             return self._cims[parent_state]
 
     @property
@@ -110,7 +123,7 @@ class Node:
         if self.cim is None:
             return None
         else:
-            transition_rates = self.cim._im[self._state, :]
+            transition_rates = copy(self.cim._im[self._state, :])
             transition_rates[self._state] = 0
             return transition_rates
 
@@ -137,23 +150,31 @@ class Graph:
 
 
 class CTBN(Graph):
-    def __init__(self, nodes: List[Node], alpha: float, beta: float):
+    def __init__(self, nodes: List[CTBNNode]):
         super().__init__(nodes)
-        [n.generate_random_cims(alpha, beta) for n in self._nodes]
-        [n.set_cim() for n in self._nodes]
+
+    @ classmethod
+    def with_random_cims(self, nodes: List[CTBNNode], alpha, beta):
+        [n.generate_random_cims(alpha, beta) for n in nodes]
+        logging.info("Initialiting Random Conditional Intensity Matrices: \n ")
+        [logging.debug(pprint.pformat(n.cims)) for n in nodes]
+        return CTBN(nodes)
+
+    @ property
+    def state(self):
+        return States([n.state for n in self._nodes])
 
     def active_node(self) -> 'Node':
-        rates = [0 if np.exit_rate is None else n.exit_rate for n in self._nodes]
-        cum_prob = np.cumsum(rates) / \
-            np.sum(self.transition_rates)
+        rates = [0 if n.exit_rate is None else n.exit_rate for n in self._nodes]
+        cum_prob = np.cumsum(rates) / np.sum(rates)
         return self._nodes[np.argmax(np.random.uniform() <= cum_prob)]
 
     def transition(self) -> Transition:
         node = self.active_node()
         tau = node.exit_time()
-        s_0 = node.state
+        s_0 = self.state
         node.next_state()
-        s_1 = node.state
+        s_1 = self.state
         return Transition(s_0, s_1, tau)
 
 
@@ -162,5 +183,10 @@ class Trajectory:
         self._transitions: List[Transition]
         self._transitions = list()
 
-    def append(self):
-        self._transitions.append(Transition)
+    def append(self, transition: Transition):
+        self._transitions.append(transition)
+
+    def __repr__(self):
+        representation = pprint.pformat(
+            self._transitions)
+        return representation

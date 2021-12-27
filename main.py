@@ -1,19 +1,19 @@
-from ctbn.ctbn import Node, CTBN, State, States
+from ctbn.ctbn import CTBNNode, CTBN, State, States, Trajectory
+import logging
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
 if __name__ == "__main__":
-    states = States(list([State(0), State(1), State(3)]))
-    node_A = Node(state=State(0), states=states, parents=None, children=None)
-    node_B = Node(state=State(1), states=states,
-                  parents=list([node_A]), children=None)
-    node_A.generate_random_cims(1.0, 1.0)
-    node_B.generate_random_cims(1.0, 1.0)
-    print(node_B.cim)
-    print(node_B.exit_rate)
-    print(node_A.cim)
-    print(node_A.exit_rate)
-    print(node_B.transition_rates)
-    print(node_B.transition_rates)
+    states = States(list([State(0), State(1), State(2)]))
+    node_A = CTBNNode(state=State(0), states=states,
+                      parents=None, children=None)
+    node_B = CTBNNode(state=State(0), states=states,
+                      parents=None, children=None)
+    node_C = CTBNNode(state=State(1), states=states,
+                      parents=list([node_A, node_B]), children=None)
+    ctbn = CTBN.with_random_cims([node_A, node_B, node_C], 1.0, 1.0)
+
+    traj = Trajectory()
     for k in range(0, 10):
-        print(node_B.transition_rates)
-        node_B.next_state()
-        print(node_B._state)
+        traj.append(ctbn.transition())
+
+    print(traj)
