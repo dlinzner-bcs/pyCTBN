@@ -1,8 +1,11 @@
-from ctbn.ctbn import CTBNNode, CTBNLearner, CTBNLearnerNode, CTBN, State, States, Trajectory
+import unittest
+from ctbn.ctbn import CTBNNode, CTBNLearner, CTBNLearnerNode, CTBN, State, States, Trajectory, TestLearner
 import logging
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
 if __name__ == "__main__":
+    # unittest.main()
+
     states = States(list([State(0), State(1), State(2)]))
     node_A = CTBNNode(state=State(0), states=states,
                       parents=None)
