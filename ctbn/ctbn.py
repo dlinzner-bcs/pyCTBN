@@ -38,6 +38,10 @@ class IM:
         self._im[x, y] = val
         self._im[x, x] = -np.sum(np.delete(self._im[x, :], x))
 
+    @property
+    def im(self):
+        return self._im
+
 
 class CTBNNode(Node):
     def __init__(self, state: State, states: States, parents: List['Node']) -> 'Node':
@@ -146,3 +150,7 @@ class CTBN(Graph):
         node.next_state()
         s_1 = self.state
         return Transition(node.nid, s_0, s_1, tau)
+
+    def randomize_states(self):
+        for n in self.nodes:
+            n._state = np.random.choice(n._states)
