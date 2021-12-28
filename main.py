@@ -28,14 +28,10 @@ if __name__ == "__main__":
 
     print(traj)
 
-    node_A_ = CTBNLearnerNode(state=State(0), states=states,
-                              parents=None, alpha=1.0, beta=1.0)
-    node_B_ = CTBNLearnerNode(state=State(0), states=states,
-                              parents=list([node_A]), alpha=1.0, beta=1.0)
-    node_C_ = CTBNLearnerNode(state=State(1), states=states,
-                              parents=list([node_A, node_B]), alpha=1.0, beta=1.0)
-    node_D_ = CTBNLearnerNode(state=State(1), states=states,
-                              parents=list([node_A, node_B]), alpha=1.0, beta=1.0)
+    node_A_ = CTBNLearnerNode.from_ctbn_node(node_A)
+    node_B_ = CTBNLearnerNode.from_ctbn_node(node_B)
+    node_C_ = CTBNLearnerNode.from_ctbn_node(node_C)
+    node_D_ = CTBNLearnerNode.from_ctbn_node(node_D)
     ctbn_learner = CTBNLearner([node_A_, node_B_, node_C_, node_D_])
 
     learning_curve = LearningCurve(ctbn, ctbn_learner, PlotType.PARAMS)
