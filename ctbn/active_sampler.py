@@ -1,19 +1,9 @@
 import numpy as np
 from ctbn.ctbn_model import CTBN
-from ctbn.types import Transition, State, States, Intervention
+from ctbn.learner import CTBNLearner
+from ctbn.types import Transition, State, States, Intervention, ActiveTransition
 from typing import NewType
 from enum import Enum
-
-
-class ActiveTransition(Transition):
-    def __init__(self, node_id: int, s0: States, s1: States, tau: float, intervention: Intervention) -> None:
-        super().__init__(node_id, s0, s1, tau)
-        self._intervention = intervention
-
-    @classmethod
-    def from_transition(self, transition, intervention):
-        return ActiveTransition(transition._node_id, transition._s_init,
-                                transition._s_final, transition._exit_time, intervention=intervention)
 
 
 class SamplingStrategy(Enum):
@@ -24,8 +14,9 @@ class SamplingStrategy(Enum):
 
 
 class ActiveSampler():
-    def __init__(self, simulator: CTBN, strategy: SamplingStrategy, max_elements=None) -> None:
+    def __init__(self, simulator: CTBN, belief: CTBNLearner, strategy: SamplingStrategy, max_elements=None) -> None:
         self._simulator = simulator
+        self._belief = belief
         self._strategy = strategy
         self._max_elements = max_elements
 

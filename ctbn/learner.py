@@ -1,7 +1,6 @@
 from ctbn.ctbn_model import State, States, Transition, CTBN, CTBNNode, IM
 from ctbn.graph import Node
-from ctbn.types import Transition
-from ctbn.active_sampler import ActiveSampler, ActiveTransition
+from ctbn.types import Transition, ActiveTransition
 from typing import List
 import numpy as np
 import unittest

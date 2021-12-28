@@ -19,6 +19,17 @@ class Transition:
         return "Transition of Node " + repr(self._node_id) + " with Initial State:" + repr(self._s_init) + ";End State:" + repr(self._s_final) + ";Exit Time:" + repr(self._exit_time)
 
 
+class ActiveTransition(Transition):
+    def __init__(self, node_id: int, s0: States, s1: States, tau: float, intervention: Intervention) -> None:
+        super().__init__(node_id, s0, s1, tau)
+        self._intervention = intervention
+
+    @classmethod
+    def from_transition(self, transition, intervention):
+        return ActiveTransition(transition._node_id, transition._s_init,
+                                transition._s_final, transition._exit_time, intervention=intervention)
+
+
 class Trajectory:
     def __init__(self) -> None:
         self._transitions: List[Transition]

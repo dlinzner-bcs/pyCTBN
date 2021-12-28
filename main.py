@@ -19,7 +19,7 @@ if __name__ == "__main__":
     node_C = CTBNNode(state=State(1), states=states,
                       parents=list([node_A, node_B]))
     node_D = CTBNLearnerNode(state=State(1), states=states,
-                             parents=list([node_A, node_B]), alpha=1.0, beta=1.0)
+                             parents=list([node_A, node_B]), alpha=0.01, beta=10.0)
     ctbn = CTBN.with_random_cims([node_A, node_B, node_C, node_D], 1.0, 1.0)
 
     print(ctbn.all_combos(1))
@@ -27,10 +27,10 @@ if __name__ == "__main__":
     curves_list = dict()
 
     curves = []
-    for m in range(0, 5):
+    for m in range(0, 20):
         traj = Trajectory()
-        ctbn.randomize_states()
-        for k in range(0, 100):
+       # ctbn.randomize_states()
+        for k in range(0, 1000):
             traj.append(ctbn.transition())
         node_A_ = CTBNLearnerNode.from_ctbn_node(node_A)
         node_B_ = CTBNLearnerNode.from_ctbn_node(node_B)
@@ -42,7 +42,7 @@ if __name__ == "__main__":
         c = 0
         for trans in traj._transitions:
             ctbn_learner.update_stats(trans)
-            if c % 1 == 0:
+            if c % 10 == 0:
                 ctbn_learner.estimate_cims()
                 learning_curve.add_point()
             c += 1
@@ -50,26 +50,26 @@ if __name__ == "__main__":
     curves_list['passive'] = curves
 
     curves = []
-    for m in range(0, 10):
+    for m in range(0, 20):
         traj = Trajectory()
-        ctbn.randomize_states()
-        active_sampler = ActiveSampler(
-            simulator=ctbn, strategy=SamplingStrategy.RANDOM, max_elements=1)
-        for k in range(0, 100):
-            trans = active_sampler.sample()
-            traj.append(trans)
+        # ctbn.randomize_states()
 
         node_A_ = CTBNLearnerNode.from_ctbn_node(node_A)
         node_B_ = CTBNLearnerNode.from_ctbn_node(node_B)
         node_C_ = CTBNLearnerNode.from_ctbn_node(node_C)
         node_D_ = CTBNLearnerNode.from_ctbn_node(node_D)
         ctbn_learner = CTBNLearner([node_A_, node_B_, node_C_, node_D_])
+        active_sampler = ActiveSampler(
+            simulator=ctbn, belief=ctbn_learner, strategy=SamplingStrategy.RANDOM, max_elements=1)
+        for k in range(0, 1000):
+            trans = active_sampler.sample()
+            traj.append(trans)
 
         learning_curve = LearningCurve(ctbn, ctbn_learner, PlotType.PARAMS)
         c = 0
         for trans in traj._transitions:
             ctbn_learner.update_stats(trans)
-            if c % 1 == 0:
+            if c % 10 == 0:
                 ctbn_learner.estimate_cims()
                 learning_curve.add_point()
             c += 1
