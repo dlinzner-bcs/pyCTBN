@@ -31,8 +31,8 @@ class ActiveSampler():
 
     def sample(self):
         if self._strategy == SamplingStrategy.RANDOM:
-            all_combs = self._simulator.all_combos(self._max_elements)
-            intervention = np.random.choice(list(all_combs))
+            all_combs = list(self._simulator.all_combos(self._max_elements))
+            intervention = np.random.choice(all_combs)
             return ActiveTransition.from_transition(self._simulator.intervention(
                 intervention=intervention).transition(), intervention=intervention)
         else:

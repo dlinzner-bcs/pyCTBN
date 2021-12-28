@@ -22,7 +22,7 @@ if __name__ == "__main__":
                              parents=list([node_A, node_B]), alpha=1.0, beta=1.0)
     ctbn = CTBN.with_random_cims([node_A, node_B, node_C, node_D], 1.0, 1.0)
 
-    print(ctbn.all_combos())
+    print(ctbn.all_combos(1))
 
     curves_list = dict()
 
@@ -54,7 +54,7 @@ if __name__ == "__main__":
         traj = Trajectory()
         ctbn.randomize_states()
         active_sampler = ActiveSampler(
-            simulator=ctbn, strategy=SamplingStrategy.RANDOM, max_elements=2)
+            simulator=ctbn, strategy=SamplingStrategy.RANDOM, max_elements=1)
         for k in range(0, 100):
             trans = active_sampler.sample()
             traj.append(trans)

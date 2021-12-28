@@ -89,7 +89,10 @@ class CTBNLearner(CTBN):
         t_stat = node._transition_stats[p_state]
         t_stat[s0, s1] += 1
 
-        intervened_nodes = [intv[0] for intv in transition._intervention]
+        if transition._intervention is None:
+            intervened_nodes = []
+        else:
+            intervened_nodes = [intv[0] for intv in transition._intervention]
         for n in self.nodes:
             if n.nid in intervened_nodes:
                 pass

@@ -64,4 +64,5 @@ class Graph:
             for r in range(1, n+1):
                 for combo in itertools.combinations(state, r):
                     combos.add(combo)
+        combos.add(None)
         return combos
