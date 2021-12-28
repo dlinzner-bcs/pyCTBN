@@ -53,10 +53,13 @@ class Graph:
     def all_possible_states(self):
         return itertools.product(*[n.states for n in self.nodes])
 
-    def all_combos(self):
+    def all_combos(self, max_elements=None):
         combos = set()
         for state in self.all_possible_states():
-            n = len(state)
+            if max_elements is None:
+                n = len(state)
+            else:
+                n = max_elements
             state = [(i, s) for (i, s) in enumerate(state)]
             for r in range(1, n+1):
                 for combo in itertools.combinations(state, r):

@@ -1,6 +1,7 @@
 from ctbn.ctbn_model import State, States, Transition, CTBN, CTBNNode, IM
 from ctbn.graph import Node
 from ctbn.types import Transition
+from ctbn.active_sampler import ActiveSampler, ActiveTransition
 from typing import List
 import numpy as np
 import unittest
@@ -47,7 +48,15 @@ class CTBNLearner(CTBN):
     def __init__(self, nodes: List[CTBNLearnerNode]):
         super().__init__(nodes)
 
-    def update_stats(self, transition: Transition):
+    def update_stats(self, transiton):
+        if type(transiton) is ActiveTransition:
+            self.update_stats_active(transiton)
+        if type(transiton) is Transition:
+            self.update_stats_passive(transiton)
+        else:
+            pass
+
+    def update_stats_passive(self, transition: Transition):
         node = self.node_by_id(transition._node_id)
         if node._parents is None:
             p_state = None
@@ -67,6 +76,32 @@ class CTBNLearner(CTBN):
                                 for n_p in n._parents])
             e_stat = n._exit_time_stats[p_state]
             e_stat[s0] += transition._exit_time
+
+    def update_stats_active(self, transition: ActiveTransition):
+        node = self.node_by_id(transition._node_id)
+        if node._parents is None:
+            p_state = None
+        else:
+            p_state = tuple([transition._s_init[n.nid]
+                             for n in node._parents])
+        s0 = transition._s_init[node.nid]
+        s1 = transition._s_final[node.nid]
+        t_stat = node._transition_stats[p_state]
+        t_stat[s0, s1] += 1
+
+        intervened_nodes = [intv[0] for intv in transition._intervention]
+        for n in self.nodes:
+            if n.nid in intervened_nodes:
+                pass
+            else:
+                s0 = transition._s_init[n.nid]
+                if n._parents is None:
+                    p_state = None
+                else:
+                    p_state = tuple([transition._s_init[n_p.nid]
+                                    for n_p in n._parents])
+                e_stat = n._exit_time_stats[p_state]
+                e_stat[s0] += transition._exit_time
 
     def estimate_cims(self):
         [n.estimate_cims() for n in self.nodes]

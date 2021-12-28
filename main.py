@@ -1,5 +1,6 @@
 import unittest
 import numpy as np
+from ctbn.active_sampler import ActiveSampler, SamplingStrategy
 from ctbn.types import Transition, Trajectory, States, State
 from ctbn.ctbn_model import CTBNNode, CTBN
 from ctbn.learner import CTBNLearner, CTBNLearnerNode
@@ -49,11 +50,15 @@ if __name__ == "__main__":
     curves_list['passive'] = curves
 
     curves = []
-    for m in range(0, 5):
+    for m in range(0, 10):
         traj = Trajectory()
         ctbn.randomize_states()
+        active_sampler = ActiveSampler(
+            simulator=ctbn, strategy=SamplingStrategy.RANDOM, max_elements=2)
         for k in range(0, 100):
-            traj.append(ctbn.transition())
+            trans = active_sampler.sample()
+            traj.append(trans)
+
         node_A_ = CTBNLearnerNode.from_ctbn_node(node_A)
         node_B_ = CTBNLearnerNode.from_ctbn_node(node_B)
         node_C_ = CTBNLearnerNode.from_ctbn_node(node_C)
