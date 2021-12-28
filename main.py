@@ -4,7 +4,7 @@ import logging
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
 if __name__ == "__main__":
-    # unittest.main()
+    unittest.main()
 
     states = States(list([State(0), State(1), State(2)]))
     node_A = CTBNNode(state=State(0), states=states,
