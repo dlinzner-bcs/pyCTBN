@@ -2,7 +2,7 @@ import numpy as np
 from ctbn.graph import Node, Graph
 from ctbn.types import Transition, State, States
 from typing import List, Optional
-from copy import copy
+from copy import copy, deepcopy
 import pprint
 import logging
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
@@ -114,6 +114,13 @@ class CTBNNode(Node):
                 np.sum(self.transition_rates)
             self._state = State(np.argmax(np.random.uniform() <= cum_prob))
 
+    def intervention(self, state: State):
+        node = deepcopy(self)
+        node._state = state
+        for states in node.all_state_combinations():
+            node.cims[states]._im = node.cims[states]._im * 0
+        return node
+
 
 class CTBN(Graph):
     def __init__(self, nodes: List[CTBNNode]):
@@ -150,3 +157,9 @@ class CTBN(Graph):
     def randomize_states(self):
         for n in self.nodes:
             n._state = np.random.choice(n._states)
+
+    def intervention(self, node_id: int, state: State):
+        ctbn = deepcopy(self)
+        node = ctbn.node_by_id(node_id)
+        node.intervention(state)
+        return ctbn

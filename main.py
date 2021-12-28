@@ -1,4 +1,5 @@
 import unittest
+import numpy as np
 from ctbn.types import Transition, Trajectory, States, State
 from ctbn.ctbn import CTBNNode, CTBN
 from ctbn.learner import CTBNLearner, CTBNLearnerNode
@@ -20,8 +21,10 @@ if __name__ == "__main__":
                              parents=list([node_A, node_B]), alpha=1.0, beta=1.0)
     ctbn = CTBN.with_random_cims([node_A, node_B, node_C, node_D], 1.0, 1.0)
 
+    curves_list = dict()
+
     curves = []
-    for m in range(0, 100):
+    for m in range(0, 5):
         traj = Trajectory()
         ctbn.randomize_states()
         for k in range(0, 100):
@@ -36,11 +39,37 @@ if __name__ == "__main__":
         c = 0
         for trans in traj._transitions:
             ctbn_learner.update_stats(trans)
-            if c % 3 == 0:
+            if c % 1 == 0:
                 ctbn_learner.estimate_cims()
                 learning_curve.add_point()
             c += 1
         curves.append(learning_curve)
+    curves_list['passive'] = curves
+
+    curves = []
+    for m in range(0, 5):
+        traj = Trajectory()
+        ctbn.randomize_states()
+        for k in range(0, 100):
+
+            traj.append(ctbn.intervention(node_id=np.random.choice(
+                [0, 1, 2, 3]), state=np.random.choice(states)).transition())
+        node_A_ = CTBNLearnerNode.from_ctbn_node(node_A)
+        node_B_ = CTBNLearnerNode.from_ctbn_node(node_B)
+        node_C_ = CTBNLearnerNode.from_ctbn_node(node_C)
+        node_D_ = CTBNLearnerNode.from_ctbn_node(node_D)
+        ctbn_learner = CTBNLearner([node_A_, node_B_, node_C_, node_D_])
+
+        learning_curve = LearningCurve(ctbn, ctbn_learner, PlotType.PARAMS)
+        c = 0
+        for trans in traj._transitions:
+            ctbn_learner.update_stats(trans)
+            if c % 1 == 0:
+                ctbn_learner.estimate_cims()
+                learning_curve.add_point()
+            c += 1
+        curves.append(learning_curve)
+    curves_list['random'] = curves
 
     plotter = LearningPlotter()
-    plotter.plot(curves)
+    plotter.plot(curves_list)
