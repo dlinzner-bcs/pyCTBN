@@ -1,26 +1,11 @@
 import numpy as np
-import itertools
-from typing import List, NewType, Optional
-from numpy.core.fromnumeric import shape
+from ctbn.graph import Node, Graph
+from ctbn.types import Transition, State, States
+from typing import List, Optional
 from copy import copy
 import pprint
 import logging
-import unittest
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
-
-State = NewType('State', int)
-States = NewType('States', tuple[State])
-
-
-class Transition:
-    def __init__(self, node_id: int,  s0: States, s1: States, tau: float) -> None:
-        self._node_id = node_id
-        self._s_init = s0
-        self._s_final = s1
-        self._exit_time = tau
-
-    def __repr__(self):
-        return "Transition of Node " + repr(self._node_id) + " with Initial State:" + repr(self._s_init) + ";End State:" + repr(self._s_final) + ";Exit Time:" + repr(self._exit_time)
 
 
 class IM:
@@ -52,37 +37,6 @@ class IM:
     def set(self, x, y, val) -> None:
         self._im[x, y] = val
         self._im[x, x] = -np.sum(np.delete(self._im[x, :], x))
-
-
-class Node:
-    def __init__(self, states: States, parents: List['Node']) -> 'Node':
-        self._states = states
-        self._parents = parents
-        self._nid: Optional[int]
-        self._nid = None
-
-    @property
-    def nid(self):
-        return self._nid
-
-    @nid.setter
-    def nid(self, node_id):
-        self._nid = node_id
-
-    @nid.deleter
-    def nid(self):
-        self._nid = None
-
-    @property
-    def parents(self):
-        return self._parents
-
-    @property
-    def states(self):
-        return self._states
-
-    def all_state_combinations(self):
-        return itertools.product(*[self.states for p in self.parents])
 
 
 class CTBNNode(Node):
@@ -161,20 +115,6 @@ class CTBNNode(Node):
             self._state = State(np.argmax(np.random.uniform() <= cum_prob))
 
 
-class Graph:
-    def __init__(self, nodes: List[Node]):
-        self._nodes = nodes
-        for n, n_id in zip(nodes, range(0, len(nodes))):
-            n.nid = n_id
-
-    @property
-    def nodes(self):
-        return self._nodes
-
-    def node_by_id(self, nid) -> 'Node':
-        return [n for n in self._nodes if n._nid == nid][0]
-
-
 class CTBN(Graph):
     def __init__(self, nodes: List[CTBNNode]):
         super().__init__(nodes)
@@ -206,128 +146,3 @@ class CTBN(Graph):
         node.next_state()
         s_1 = self.state
         return Transition(node.nid, s_0, s_1, tau)
-
-
-class Trajectory:
-    def __init__(self) -> None:
-        self._transitions: List[Transition]
-        self._transitions = list()
-
-    def append(self, transition: Transition):
-        self._transitions.append(transition)
-
-    def __repr__(self):
-        representation = pprint.pformat(
-            self._transitions)
-        return representation
-
-    def __iter__(self):
-        pass
-
-
-class CTBNLearnerNode(CTBNNode):
-    def __init__(self, state: State, states: States, parents: List['Node'], alpha=1.0, beta=1.0) -> 'Node':
-        super().__init__(state, states, parents)
-        transition_stats = dict()
-        exit_time_stats = dict()
-        if self._parents is None:
-            dim = len(self._states)
-            transition_stats[None] = np.ones((dim, dim))*alpha
-            exit_time_stats[None] = np.ones((dim,))*beta
-        else:
-            for states in self.all_state_combinations():
-                dim = len(self._states)
-                transition_stats[tuple(states)] = np.ones((dim, dim))*alpha
-                exit_time_stats[tuple(states)] = np.ones((dim,))*beta
-
-        self._transition_stats = transition_stats
-        self._exit_time_stats = exit_time_stats
-        self._cims = None
-
-    def estimate_cims(self):
-        cims = dict()
-        for key in self._transition_stats.keys():
-            t_stat = self._transition_stats[key]
-            e_stat = self._exit_time_stats[key]
-            cim = IM.empty_from_dim(len(self._states))
-            for s in self._states:
-                for s_ in self._states:
-                    if s != s_:
-                        cim.set(s, s_, t_stat[s, s_]/e_stat[s])
-            cims[key] = cim
-        self._cims = cims
-
-
-class CTBNLearner(Graph):
-    def __init__(self, nodes: List[CTBNLearnerNode]):
-        super().__init__(nodes)
-
-    def update_stats(self, transition: Transition):
-        node = self.node_by_id(transition._node_id)
-        if node._parents is None:
-            p_state = None
-        else:
-            p_state = tuple([transition._s_init[n.nid]
-                             for n in node._parents])
-        s0 = transition._s_init[node.nid]
-        s1 = transition._s_final[node.nid]
-        t_stat = node._transition_stats[p_state]
-        t_stat[s0, s1] += 1
-        for n in self.nodes:
-            s0 = transition._s_init[n.nid]
-            if n._parents is None:
-                p_state = None
-            else:
-                p_state = tuple([transition._s_init[n_p.nid]
-                                for n_p in n._parents])
-            e_stat = n._exit_time_stats[p_state]
-            e_stat[s0] += transition._exit_time
-
-
-class TestLearner(unittest.TestCase):
-
-    def test_update_statistics(self):
-
-        states = States(list([State(0), State(1)]))
-        nodes = []
-        nodes.append(CTBNLearnerNode(state=State(0), states=states,
-                                     parents=None))
-        nodes.append(CTBNLearnerNode(state=State(0), states=states,
-                                     parents=[nodes[0]]))
-        nodes.append(CTBNLearnerNode(state=State(0), states=states,
-                                     parents=[nodes[0], nodes[1]]))
-
-        init_states = States([State(0), State(0), State(0)])
-        ctbn_learner = CTBNLearner(nodes)
-
-        transition = Transition(2, init_states, States(
-            [State(0), State(0), State(1)]), 1.03)
-
-        ctbn_learner.update_stats(transition)
-
-        assert(abs(nodes[0]._exit_time_stats[None][0] - 2.03) < 10**-9)
-        assert(abs(nodes[0]._exit_time_stats[None][1] - 1.0) < 10**-9)
-        assert(nodes[0]._transition_stats[None][0, 1] == 1.0)
-        assert(nodes[0]._transition_stats[None][1, 0] == 1.0)
-
-        curr_state = tuple(States([State(0)]))
-        assert(abs(nodes[1]._exit_time_stats[curr_state][0] - 2.03) < 10**-9)
-        assert(nodes[1]._transition_stats[curr_state][0, 1] == 1.0)
-        assert(nodes[1]._transition_stats[curr_state][1, 0] == 1.0)
-        for states in nodes[1].all_state_combinations():
-            if states != curr_state:
-                assert(
-                    abs(nodes[1]._exit_time_stats[states][1] - 1.0) < 10**-9)
-                assert(nodes[1]._transition_stats[states][0, 1] == 1.0)
-                assert(nodes[1]._transition_stats[states][1, 0] == 1.0)
-
-        curr_state = tuple(States([State(0), State(0)]))
-        assert(abs(nodes[2]._exit_time_stats[curr_state][0] - 2.03) < 10**-9)
-        assert(nodes[2]._transition_stats[curr_state][0, 1] == 2.0)
-        assert(nodes[2]._transition_stats[curr_state][1, 0] == 1.0)
-        for states in nodes[2].all_state_combinations():
-            if states != curr_state:
-                assert(
-                    abs(nodes[2]._exit_time_stats[states][1] - 1.0) < 10**-9)
-                assert(nodes[2]._transition_stats[states][0, 1] == 1.0)
-                assert(nodes[2]._transition_stats[states][1, 0] == 1.0)
