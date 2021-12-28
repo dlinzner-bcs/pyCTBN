@@ -2,7 +2,7 @@ import plotly.graph_objs as go
 import plotly.express as px
 from plotly.subplots import make_subplots
 import numpy as np
-from ctbn.ctbn import CTBN
+from ctbn.ctbn_model import CTBN
 from ctbn.learner import CTBNLearner
 from enum import Enum
 from numpy.linalg import norm

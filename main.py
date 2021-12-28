@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 from ctbn.types import Transition, Trajectory, States, State
-from ctbn.ctbn import CTBNNode, CTBN
+from ctbn.ctbn_model import CTBNNode, CTBN
 from ctbn.learner import CTBNLearner, CTBNLearnerNode
 from ctbn.plots import LearningCurve, PlotType, LearningPlotter
 import logging
@@ -53,9 +53,7 @@ if __name__ == "__main__":
         traj = Trajectory()
         ctbn.randomize_states()
         for k in range(0, 100):
-
-            traj.append(ctbn.intervention(node_id=np.random.choice(
-                [0, 1, 2, 3]), state=np.random.choice(states)).transition())
+            traj.append(ctbn.transition())
         node_A_ = CTBNLearnerNode.from_ctbn_node(node_A)
         node_B_ = CTBNLearnerNode.from_ctbn_node(node_B)
         node_C_ = CTBNLearnerNode.from_ctbn_node(node_C)

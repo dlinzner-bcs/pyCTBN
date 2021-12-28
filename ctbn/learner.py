@@ -1,5 +1,5 @@
-from ctbn.ctbn import CTBNNode, State, States, Transition, IM
-from ctbn.graph import Node, Graph
+from ctbn.ctbn_model import State, States, Transition, CTBN, CTBNNode, IM
+from ctbn.graph import Node
 from ctbn.types import Transition
 from typing import List
 import numpy as np
@@ -43,7 +43,7 @@ class CTBNLearnerNode(CTBNNode):
         self._cims = cims
 
 
-class CTBNLearner(Graph):
+class CTBNLearner(CTBN):
     def __init__(self, nodes: List[CTBNLearnerNode]):
         super().__init__(nodes)
 

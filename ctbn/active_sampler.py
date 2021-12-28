@@ -1,13 +1,12 @@
+import numpy as np
 from ctbn.learner import CTBNLearner
-from ctbn.types import Transition, State, States
+from ctbn.types import Transition, State, States, Intervention
 from typing import NewType
 from enum import Enum
 
-NewType('Intervention', tuple[tuple[int, State]])
-
 
 class ActiveTransition(Transition):
-    def __init__(self, node_id: int, s0: States, s1: States, tau: float, intervention='Intervention') -> None:
+    def __init__(self, node_id: int, s0: States, s1: States, tau: float, intervention: Intervention) -> None:
         super().__init__(node_id, s0, s1, tau)
         self._intervention = intervention
 
@@ -23,3 +22,10 @@ class ActiveSampler():
     def __init__(self, simulator: CTBNLearner, stragtegy: SamplingStrategy) -> None:
         self._simulator = simulator
         self._strategy = stragtegy
+
+    def sample(self):
+        if self._strategy == SamplingStrategy.RANDOM:
+            intervention = np.random.choice(self._simulator.all_combos())
+            self._simulator.intervention()
+        else:
+            pass
