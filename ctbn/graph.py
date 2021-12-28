@@ -49,3 +49,16 @@ class Graph:
 
     def node_by_id(self, nid) -> 'Node':
         return [n for n in self._nodes if n._nid == nid][0]
+
+    def all_possible_states(self):
+        return itertools.product(*[n.states for n in self.nodes])
+
+    def all_combos(self):
+        combos = set()
+        for state in self.all_possible_states():
+            n = len(state)
+            state = [(i, s) for (i, s) in enumerate(state)]
+            for r in range(1, n+1):
+                for combo in itertools.combinations(state, r):
+                    combos.add(combo)
+        return combos

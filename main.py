@@ -10,7 +10,7 @@ logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 if __name__ == "__main__":
     # unittest.main()
 
-    states = States(list([State(0), State(1), State(2)]))
+    states = States(list([State(0), State(1)]))
     node_A = CTBNNode(state=State(0), states=states,
                       parents=None)
     node_B = CTBNNode(state=State(0), states=states,
@@ -20,6 +20,8 @@ if __name__ == "__main__":
     node_D = CTBNLearnerNode(state=State(1), states=states,
                              parents=list([node_A, node_B]), alpha=1.0, beta=1.0)
     ctbn = CTBN.with_random_cims([node_A, node_B, node_C, node_D], 1.0, 1.0)
+
+    print(ctbn.all_combos())
 
     curves_list = dict()
 
