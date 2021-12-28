@@ -12,10 +12,6 @@ class IM:
     def __init__(self, matrix: np.numarray) -> 'IM':
         d = 0
         for col in matrix:
-            if np.sum(
-                    np.delete(col, d)) == -col[d]:
-                logging.warning(
-                    "Matrix not a proper Intensity Matrix. Will attempt normalization!")
             col[d] = -np.sum(np.delete(col, d))
             assert np.sum(
                 np.delete(col, d)) == -col[d], "Logic Error! Matrix not a proper Intensity Matrix!"
