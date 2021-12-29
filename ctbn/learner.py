@@ -1,3 +1,4 @@
+from copy import deepcopy
 from ctbn.ctbn_model import State, States, Transition, CTBN, CTBNNode, IM
 from ctbn.graph import Node
 from ctbn.types import Transition, ActiveTransition
@@ -29,6 +30,22 @@ class CTBNLearnerNode(CTBNNode):
     def from_ctbn_node(self, node: CTBNNode, alpha=1.0, beta=1.0):
         return CTBNLearnerNode(node.state, node.states, node.parents)
 
+    def reset_stats(self):
+        transition_stats = dict()
+        exit_time_stats = dict()
+        if self._parents is None:
+            dim = len(self._states)
+            transition_stats[None] = np.zeros((dim, dim))
+            exit_time_stats[None] = np.zeros((dim,))
+        else:
+            for states in self.all_state_combinations():
+                dim = len(self._states)
+                transition_stats[tuple(states)] = np.zeros((dim, dim))
+                exit_time_stats[tuple(states)] = np.zeros((dim,))
+
+        self._transition_stats = transition_stats
+        self._exit_time_stats = exit_time_stats
+
     def estimate_cims(self):
         cims = dict()
         for key in self._transition_stats.keys():
@@ -41,6 +58,32 @@ class CTBNLearnerNode(CTBNNode):
                         cim.set(s, s_, t_stat[s, s_]/e_stat[s])
             cims[key] = cim
         self._cims = cims
+
+    def sample_cims(self):
+        cims = dict()
+        for key in self._transition_stats.keys():
+            t_stat = self._transition_stats[key]
+            e_stat = self._exit_time_stats[key]
+            cim = IM.empty_from_dim(len(self._states))
+            for s in self._states:
+                for s_ in self._states:
+                    if s != s_:
+                        cim.set(s, s_, np.random.gamma(
+                            shape=t_stat[s, s_], scale=1/e_stat[s]))
+            cims[key] = cim
+        self._cims = cims
+
+    def llikelihood(self):
+        llh = 0
+        for key in self._transition_stats.keys():
+            t_stat = self._transition_stats[key]
+            e_stat = self._exit_time_stats[key]
+            for s in self._states:
+                for s_ in self._states:
+                    if s != s_:
+                        llh += t_stat[s, s_]*np.log(self._cims[key].im[s, s_]) - \
+                            e_stat[s]*self._cims[key].im[s, s]
+        return llh
 
 
 class CTBNLearner(CTBN):
@@ -105,8 +148,54 @@ class CTBNLearner(CTBN):
                 e_stat = n._exit_time_stats[p_state]
                 e_stat[s0] += transition._exit_time
 
+    def average_stats_active(self, transition: ActiveTransition, num_samples):
+        node = self.node_by_id(transition._node_id)
+        if node._parents is None:
+            p_state = None
+        else:
+            p_state = tuple([transition._s_init[n.nid]
+                             for n in node._parents])
+        s0 = transition._s_init[node.nid]
+        s1 = transition._s_final[node.nid]
+        t_stat = node._transition_stats[p_state]
+        t_stat[s0, s1] += 1/num_samples
+
+        if transition._intervention is None:
+            intervened_nodes = []
+        else:
+            intervened_nodes = [intv[0] for intv in transition._intervention]
+        for n in self.nodes:
+            if n.nid in intervened_nodes:
+                pass
+            else:
+                s0 = transition._s_init[n.nid]
+                if n._parents is None:
+                    p_state = None
+                else:
+                    p_state = tuple([transition._s_init[n_p.nid]
+                                    for n_p in n._parents])
+                e_stat = n._exit_time_stats[p_state]
+                e_stat[s0] += transition._exit_time/num_samples
+
     def estimate_cims(self):
         [n.estimate_cims() for n in self.nodes]
+
+    def sample_cims(self):
+        [n.sample_cims() for n in self.nodes]
+
+    def reset_stats(self):
+        [n.reset_stats() for n in self.nodes]
+
+    def llikelihood(self):
+        return np.sum([n.llikelihood() for n in self.nodes])
+
+    def estimate_expected_statistics(self, intervention, num_samples):
+        simulator = deepcopy(self)
+        simulator.reset_stats()
+        for k in range(0, num_samples):
+            simulator.average_stats_active(
+                self.intervention(intervention).transition(), num_samples)
+        return simulator
 
 
 class TestLearner(unittest.TestCase):
