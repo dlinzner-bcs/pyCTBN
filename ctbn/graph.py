@@ -26,6 +26,10 @@ class Node:
     def parents(self):
         return self._parents
 
+    def set_parents(self, parents: List['Node']):
+        self._parents = parents
+        return None
+
     @property
     def states(self):
         return self._states
