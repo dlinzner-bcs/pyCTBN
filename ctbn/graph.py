@@ -1,6 +1,7 @@
-from ctbn.types import States
 import itertools
 from typing import List, NewType, Optional
+
+from ctbn.types import States
 
 
 class Node:

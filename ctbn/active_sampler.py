@@ -1,11 +1,13 @@
 from copy import deepcopy
+from enum import Enum
+from typing import NewType
+
 import numpy as np
 from scipy.special import digamma
+
 from ctbn.ctbn_model import CTBN
 from ctbn.learner import CTBNLearner
-from ctbn.types import Transition, State, States, Intervention, ActiveTransition
-from typing import NewType
-from enum import Enum
+from ctbn.types import ActiveTransition, Intervention, State, States, Transition
 
 
 class SamplingStrategy(Enum):

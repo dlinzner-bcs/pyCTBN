@@ -1,6 +1,6 @@
 
-from typing import List, NewType, Optional
 import pprint
+from typing import List, NewType, Optional
 
 State = NewType('State', int)
 States = NewType('States', tuple[State])

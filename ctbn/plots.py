@@ -1,12 +1,14 @@
-import plotly.graph_objs as go
-import plotly.express as px
-from plotly.subplots import make_subplots
+from enum import Enum
+from typing import Dict, List
+
 import numpy as np
+import plotly.express as px
+import plotly.graph_objs as go
+from numpy.linalg import norm
+from plotly.subplots import make_subplots
+
 from ctbn.ctbn_model import CTBN
 from ctbn.learner import CTBNLearner
-from enum import Enum
-from numpy.linalg import norm
-from typing import Dict, List
 
 
 class PlotType(Enum):
