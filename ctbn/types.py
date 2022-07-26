@@ -2,7 +2,6 @@
 from typing import List, NewType, Optional
 import pprint
 
-
 State = NewType('State', int)
 States = NewType('States', tuple[State])
 Intervention = NewType('Intervention', tuple[tuple[int, State]])
