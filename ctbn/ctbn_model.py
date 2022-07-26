@@ -1,10 +1,13 @@
-import numpy as np
-from ctbn.graph import Node, Graph
-from ctbn.types import Transition, State, States
-from typing import List, Optional
-from copy import copy, deepcopy
-import pprint
 import logging
+import pprint
+from copy import copy, deepcopy
+from typing import List, Optional
+
+import numpy as np
+
+from ctbn.graph import Graph, Node
+from ctbn.types import State, States, Transition
+
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
 
@@ -40,7 +43,7 @@ class IM:
 
 
 class CTBNNode(Node):
-    def __init__(self, state: State, states: States, parents: List['Node'], alpha=1.0, beta=1.0) -> 'Node':
+    def __init__(self, state: State, states: States, parents: List['Node'],name: str, alpha=1.0, beta=1.0) -> 'Node':
         super().__init__(states, parents)
         self._state = state
         self._cims = None
@@ -48,6 +51,7 @@ class CTBNNode(Node):
         self._cim = None
         self._alpha = alpha
         self._beta = beta
+        self._name = name
 
     @ property
     def cims(self):
@@ -135,9 +139,14 @@ class CTBN(Graph):
         [logging.debug(pprint.pformat(n.cims)) for n in nodes]
         return CTBN(nodes)
 
+    def print_cims(self)-> None:
+        logging.info("Conditional Intensity Matrices:")
+        [logging.debug(pprint.pformat(n.cims)) for n in self.nodes]
+        return None
+
     @ property
     def state(self):
-        return States([n.state for n in self._nodes])
+        return States([n.state for n in self._nodes])  
 
     def active_node(self) -> 'Node':
         rates = [0 if n.exit_rate is None else n.exit_rate for n in self._nodes]
@@ -146,7 +155,7 @@ class CTBN(Graph):
 
     def exit_time(self):
         rates = [0 if n.exit_rate is None else n.exit_rate for n in self._nodes]
-        return np.random.exponential(1/np.sum(rates))
+        return np.random.exponential(1/abs(np.sum(rates)))
 
     def transition(self) -> Transition:
         node = self.active_node()
