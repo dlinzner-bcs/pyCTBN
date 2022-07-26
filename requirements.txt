@@ -10,7 +10,6 @@ flake8==4.0.1
 importlib-metadata==4.11.3
 iniconfig==1.1.1
 mccabe==0.7.0
-mkl-fft
 mkl-random==1.2.2
 mkl-service==2.4.0
 mypy-extensions==0.4.3
