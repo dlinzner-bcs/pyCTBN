@@ -11,14 +11,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Get changed files
-        uses: dorny/paths-filter@v2
-        id: filter
-        with:
-          list-files: shell
-          filters: |
-            py_modified:
-              - added|modified: "./**/*.py"
       - name: Setup Python
         if: ${{ steps.filter.outputs.py_modified == 'true' }}
         uses: actions/setup-python@v2
@@ -31,4 +23,4 @@ jobs:
         run: pip install -r requirements.txt
       - name: Run pytest
         if: ${{ steps.filter.outputs.py_modified == 'true' }}
-        run: pytest tests
+        run: python -m pytest tests
