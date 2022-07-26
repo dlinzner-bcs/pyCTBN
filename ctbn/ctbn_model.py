@@ -36,7 +36,7 @@ class IM:
         self._im[x, x] = -np.sum(np.delete(self._im[x, :], x))
 
     @property
-    def im(self):
+    def im(self) -> 'IM':
         return self._im
 
 
