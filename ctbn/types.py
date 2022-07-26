@@ -7,7 +7,6 @@ State = NewType('State', int)
 States = NewType('States', tuple[State])
 Intervention = NewType('Intervention', tuple[tuple[int, State]])
 
-
 class Transition:
     def __init__(self, node_id: int,  s0: States, s1: States, tau: float) -> None:
         self._node_id = node_id
