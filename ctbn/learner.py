@@ -1,8 +1,10 @@
 from copy import deepcopy
 from itertools import chain, combinations
 from typing import List, Optional
+
 import numpy as np
 from scipy.special import gammaln
+
 from ctbn.ctbn_model import CTBN, IM, CTBNNode, State, States, Transition
 from ctbn.graph import Node
 from ctbn.types import ActiveTransition, Trajectory, Transition

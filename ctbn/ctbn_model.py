@@ -2,7 +2,9 @@ import logging
 import pprint
 from copy import copy, deepcopy
 from typing import List, Optional
+
 import numpy as np
+
 from ctbn.graph import Graph, Node
 from ctbn.types import State, States, Transition
 
