@@ -45,7 +45,7 @@ class ActiveSampler():
         eig_vals = dict()
         for comb in all_combs:
             eig = 0
-            for k in range(0, 3):
+            for _ in range(0, 3):
                 prior = deepcopy(self._belief)
                 prior.sample_cims()
                 trans = prior.intervention(comb).transition()
@@ -67,7 +67,7 @@ class ActiveSampler():
         num_samples = args[1]
         num_samples_stats = args[2]
         bhc = 0
-        for k in range(0, num_samples):
+        for _ in range(0, num_samples):
             self._belief.sample_cims()
             bhc += self.bhc(intervention, num_samples_stats)/num_samples
         return [intervention, bhc]
