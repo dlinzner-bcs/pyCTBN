@@ -8,7 +8,6 @@ from typing import NewType
 from enum import Enum
 
 
-
 class SamplingStrategy(Enum):
     RANDOM = 1
     EIG = 2
@@ -62,7 +61,6 @@ class ActiveSampler():
                 eig += post_llh-np.log(np.sum(post_llhs))
             eig_vals[comb] = eig/100
         return max(eig_vals,  key=eig_vals.get)
-
 
     def bhc_job(self, args):
         intervention = args[0]
