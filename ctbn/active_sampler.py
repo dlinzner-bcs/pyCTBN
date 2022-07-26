@@ -6,7 +6,7 @@ from ctbn.learner import CTBNLearner
 from ctbn.types import Transition, State, States, Intervention, ActiveTransition
 from typing import NewType
 from enum import Enum
-from pathos.multiprocessing import ProcessingPool as Pool
+
 
 
 class SamplingStrategy(Enum):
@@ -63,22 +63,6 @@ class ActiveSampler():
             eig_vals[comb] = eig/100
         return max(eig_vals,  key=eig_vals.get)
 
-    def bhc_aquisition(self, num_samples=10, num_samples_stats=10):
-
-        all_combs = self._simulator.all_combos(self._max_elements)
-        bhc_vals = dict()
-
-        args = []
-        for comb in all_combs:
-            args.append([comb, num_samples_stats,
-                         num_samples])
-        with Pool(24) as p:
-            result = p.map(self.bhc_job, args)
-        for r in result:
-            bhc_vals[r[0]] = r[1]
-
-        print(bhc_vals)
-        return max(bhc_vals,  key=bhc_vals.get)
 
     def bhc_job(self, args):
         intervention = args[0]
