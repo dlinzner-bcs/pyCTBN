@@ -2,6 +2,7 @@ from enum import Enum
 from typing import Dict, List
 
 import numpy as np
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objs as go
 from numpy.linalg import norm
@@ -9,11 +10,38 @@ from plotly.subplots import make_subplots
 
 from ctbn.ctbn_model import CTBN
 from ctbn.learner import CTBNLearner
+from ctbn.types import Trajectory
 
 
 class PlotType(Enum):
     PARAMS = 1
     STRUCT = 2
+
+class TrajectoryPlotter():
+
+    def __init__(self,trajectory: 'Trajectory') -> None:
+        self._trajectory = trajectory
+
+    def plot_as_heatmap(self,names,time_grid: np.numarray)-> pd.DataFrame:
+        df = pd.DataFrame(columns=names)
+
+        i=0
+        t_0_map = t_0_map
+        for transition in self._trajectory._transitions:
+            s0 = transition._s_init
+            t_1_map = t_0_map + transition._exit_time
+            t = time_grid[0]
+            j = i
+            for t in time_grid[j:]:
+                if t>t_0_map and t<= t_1_map:
+                    row=[t]+[int(s) for s in s0]
+                    df.loc[len(df.index)] =row
+                    i+=1
+            j = i
+            t_0_map = t_1_map
+        return df
+
+
 
 
 class LearningCurve():
@@ -156,3 +184,4 @@ class LearningPlotter():
             hovermode="x"
         )
         fig.show()
+ 
