@@ -369,3 +369,61 @@ class CTBNLearner(CTBN):
             else:
                 break
         return (sources, targets)
+
+    def learn_network(self, data: Trajectory, max_num_parents: int):
+        for node_origin in self.nodes:
+            node_list = [node_origin]
+            k = 0
+            sources = []
+            targets = []
+            while len(node_list) > 0:
+                if k <= 0:
+                    node = node_list[0]
+                    node_list.pop(0)
+                    parents, _ = self.learn_parents_of_node(
+                        node, data, max_num_parents)
+                    parent_nodes = [self.node_by_id(id) for id in parents]
+                    node.set_parents(parent_nodes)
+                    node.reset_stats()
+                    [node_list.append(p) for p in parent_nodes]
+                    parent_string = "".join(
+                        ["["+p._name+"]"+", " for p in parent_nodes])
+                    print("Parents of [%s] are %s" %
+                          (node._name, parent_string))
+
+                    [targets.append(node._name)
+                     for _ in range(0, len(parent_nodes))]
+                    [sources.append(p._name) for p in parent_nodes]
+                    k += 1
+                else:
+                    break
+        return (sources, targets)
+
+    def learn_network_greedy(self, data: Trajectory, max_num_parents: int):
+        for node_origin in self.nodes:
+            node_list = [node_origin]
+            k = 0
+            sources = []
+            targets = []
+            while len(node_list) > 0:
+                if k <= 0:
+                    node = node_list[0]
+                    node_list.pop(0)
+                    parents, _ = self.learn_parents_of_node_greedy(
+                        node, data, max_num_parents)
+                    parent_nodes = [self.node_by_id(id) for id in parents]
+                    node.set_parents(parent_nodes)
+                    node.reset_stats()
+                    [node_list.append(p) for p in parent_nodes]
+                    parent_string = "".join(
+                        ["["+p._name+"]"+", " for p in parent_nodes])
+                    print("Parents of [%s] are %s" %
+                          (node._name, parent_string))
+
+                    [targets.append(node._name)
+                     for _ in range(0, len(parent_nodes))]
+                    [sources.append(p._name) for p in parent_nodes]
+                    k += 1
+                else:
+                    break
+        return (sources, targets)

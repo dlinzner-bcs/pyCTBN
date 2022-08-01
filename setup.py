@@ -9,6 +9,7 @@ setup(
     packages=['ctbn'],
     install_requires=['scipy',
                       'numpy',
+                      'pandas',
                       'plotly'
                       ],
     python_requires=">=3.6",

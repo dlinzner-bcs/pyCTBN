@@ -148,6 +148,10 @@ class CTBN(Graph):
     def state(self):
         return States([n.state for n in self._nodes])
 
+    @state.setter
+    def state(self, state: States):
+        self.state = state
+
     def active_node(self) -> 'Node':
         rates = [0 if n.exit_rate is None else n.exit_rate for n in self._nodes]
         cum_prob = np.cumsum(rates) / np.sum(rates)
